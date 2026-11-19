@@ -50,7 +50,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 APP = "upkeep-beta"
 MIN_PYTHON = (3, 9)
 
@@ -96,6 +96,7 @@ def _resolve_powershell() -> str:
 
 WINGET = _resolve_winget()
 POWERSHELL = _resolve_powershell()
+PY_MANAGER = "py"   # the Python install manager; its `list --online` names the newest patch release
 
 
 TOAST_TAG = "upkeep-beta"
@@ -1666,15 +1667,63 @@ def cmd_pins(args, runner=subprocess.run) -> int:
 
 # ------------------------------------------------------- report-only checks ----
 
+def _python_arch_tag() -> str:
+    if platform.machine().lower() in ("arm64", "aarch64"):
+        return "arm64"
+    return "64" if sys.maxsize > 2 ** 32 else "32"
+
+
+def _release_tuple(s):
+    """'3.14.10' -> (3, 14, 10); None for a pre-release or anything else."""
+    m = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", str(s or "").strip())
+    return tuple(int(x) for x in m.groups()) if m else None
+
+
+def newest_python_patch(runner, major: int, minor: int, arch: str):
+    """Newest release of major.minor for this architecture, from the Python install
+    manager (`py list --online`). -> ((x, y, z), None) or (None, reason)."""
+    r = run_cmd(runner, [PY_MANAGER, "list", "--online", "%d.%d" % (major, minor), "--format=json"],
+                timeout=120)
+    try:
+        data = json.loads(r.stdout)
+    except ValueError:
+        data = None
+    if not isinstance(data, dict) or not isinstance(data.get("versions"), list):
+        return None, "the Python install manager (py) was not found or gave no online list"
+    tag = "%d.%d-%s" % (major, minor, arch)
+    best = None
+    for e in data["versions"]:
+        if not isinstance(e, dict) or e.get("tag") != tag:
+            continue
+        t = _release_tuple(e.get("sort-version"))
+        if t and t[:2] == (major, minor) and (best is None or t > best):
+            best = t
+    if best is None:
+        return None, "the online list has no %s release" % tag
+    return best, None
+
+
 def check_python_version(item, ctx):
+    """Yellow when this Python is below the floor, or when a newer patch release
+    of the same minor version is out. Read only: never installs."""
     v = sys.version_info
     value = "%d.%d.%d" % (v[0], v[1], v[2])
     floor = tuple(int(x) for x in str(item.get("yellow_below", "3.10")).split(".")[:2])
+    action = item.get("action") or ("update Python: py install --update (Python install manager), "
+                                     "or https://www.python.org/downloads/windows/")
     if (v[0], v[1]) < floor:
         return res(item, "yellow", value=value, waiting=True,
-                   detail="Python %s is older than %d.%d" % (value, floor[0], floor[1]),
-                   action=item.get("action") or "update Python: https://www.python.org/downloads/windows/")
-    return res(item, "green", value=value, detail="Python %s" % value)
+                   detail="Python %s is older than %d.%d" % (value, floor[0], floor[1]), action=action)
+    if not item.get("check_online", True):
+        return res(item, "green", value=value, detail="Python %s" % value)
+    newest, why = newest_python_patch(ctx["runner"], v[0], v[1], _python_arch_tag())
+    if newest is None:
+        return res(item, "green", value=value,
+                   detail="Python %s (newer patch release not checked: %s)" % (value, why))
+    if newest > (v[0], v[1], v[2]):
+        return res(item, "yellow", value=value, waiting=True,
+                   detail="Python %s; %s is out" % (value, ".".join(map(str, newest))), action=action)
+    return res(item, "green", value=value, detail="Python %s, the newest %d.%d release" % (value, v[0], v[1]))
 
 
 def check_pip_outdated(item, ctx):
@@ -2221,7 +2270,7 @@ def cmd_status(args) -> int:
     last = read_json(last_path(), None)
     if not isinstance(last, dict):
         print("no upkeep run recorded yet (try: upkeep daily --dry-run)")
-        return 1
+        return 0
     c = last["counts"]
     print("last run %s (%s): %d red, %d yellow, %d unknown, %d green" % (
         last.get("finished"), "listed only" if last.get("dry_run") else "installed",
@@ -2440,7 +2489,7 @@ def _doctor_rows(runner) -> list:
     rows.append(("schedule", None if not wants else reg,
                  "%s; task %s" % (describe_schedule(sched), "registered" if reg else "not registered")))
     rows.append(("stable copy", None, str(stable_script()) if stable_script().exists()
-                 else "not written yet (upkeep setup writes it; the task needs it)"))
+                 else "not needed yet: choosing a schedule writes it (only the scheduled task runs it)"))
     return rows
 
 

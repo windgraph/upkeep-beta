@@ -51,6 +51,7 @@ class World:
         self.claude_after = None
         self.wu_count = 0
         self.pip = "[]"
+        self.py_online = None         # `py list --online` JSON text; None = no install manager
         self.task = None
         self.schtasks = []
         self.toasts = []
@@ -109,6 +110,10 @@ class World:
                 return out(rc=0 if self.task else 1)
             self.task = cmd if a[0] == "/create" else None
             return out()
+        if cmd[0] == "py" and a[:2] == ["list", "--online"]:
+            if self.py_online is None:
+                raise FileNotFoundError("py")
+            return out(self.py_online)
         if a[:2] == ["-m", "pip"]:
             return out(self.pip)
         return out(rc=-1, stderr="unexpected command %r" % (cmd,))
@@ -512,6 +517,41 @@ def test_python_version_is_yellow_below_the_floor(world):
     assert r["status"] == "yellow" and "update Python" in r["action"]
 
 
+def py_online(*entries):
+    """entries: (tag, sort-version) pairs, shaped like `py list --online --format=json`."""
+    return json.dumps({"versions": [{"schema": 1, "company": "PythonCore", "tag": t, "sort-version": v}
+                                     for t, v in entries]})
+
+
+def test_python_version_is_yellow_when_a_newer_patch_release_is_out(world, monkeypatch):
+    monkeypatch.setattr(upkeep.sys, "version_info", (3, 14, 4, "final", 0))
+    monkeypatch.setattr(upkeep, "_python_arch_tag", lambda: "64")
+    item = {"id": "python", "yellow_below": "3.10"}
+    world.py_online = py_online(("3.14-32", "3.14.11"), ("3.14-64", "3.14.10"), ("3.14-64", "3.14.9"))
+    r = upkeep.check_python_version(item, ctx(world))
+    assert r["status"] == "yellow" and r["detail"] == "Python 3.14.4; 3.14.10 is out"   # own architecture only
+    assert "py install --update" in r["action"]
+    assert not any(c[0] == "py" and "install" in c for c in world.calls)               # read only
+    world.py_online = py_online(("3.14-64", "3.14.4"), ("3.14-64", "3.14.5rc1"))
+    r = upkeep.check_python_version(item, ctx(world))
+    assert r["status"] == "green" and "newest 3.14 release" in r["detail"]           # a pre-release does not count
+
+
+def test_python_version_without_the_install_manager_is_green_and_says_it_was_not_checked(world, monkeypatch):
+    monkeypatch.setattr(upkeep.sys, "version_info", (3, 14, 4, "final", 0))
+    r = upkeep.check_python_version({"id": "python"}, ctx(world))
+    assert r["status"] == "green" and "not checked" in r["detail"]
+    world.py_online = "not json"
+    assert "not checked" in upkeep.check_python_version({"id": "python"}, ctx(world))["detail"]
+    world.py_online = py_online(("3.13-64", "3.13.9"))
+    monkeypatch.setattr(upkeep, "_python_arch_tag", lambda: "64")
+    assert "no 3.14-64 release" in upkeep.check_python_version({"id": "python"}, ctx(world))["detail"]
+    world.py_online = py_online(("3.14-64", "3.14.10"))
+    asked = sum(c[0] == "py" for c in world.calls)
+    r = upkeep.check_python_version({"id": "python", "check_online": False}, ctx(world))
+    assert r["status"] == "green" and sum(c[0] == "py" for c in world.calls) == asked
+
+
 def stale(world, rows, uninstall, seen=None, quiet=()):
     upkeep.write_json(upkeep.KNOWN, KNOWN)
     c = ctx(world, installed_rows=[{"name": n, "id": "ARP\\Machine\\X64\\" + n, "version": v, "source": ""}
@@ -570,6 +610,19 @@ def test_doctor_reports_winget_and_the_missing_task(world, monkeypatch, capsys):
     assert upkeep.cmd_doctor(args(), world) == 0
     text = capsys.readouterr().out
     assert "winget" in text and "1.9.0" in text and "not chosen yet" in text
+    assert "choosing a schedule writes it" in text and "upkeep setup" not in text
+
+
+def test_status_on_a_fresh_install_says_no_run_yet_and_exits_0(world, capsys):
+    assert upkeep.cmd_status(args()) == 0
+    assert "no upkeep run recorded yet" in capsys.readouterr().out
+
+
+def test_choosing_a_schedule_writes_the_stable_copy_the_task_runs(world, capsys):
+    assert not upkeep.stable_script().exists()
+    assert upkeep.cmd_schedule(args(every="daily", at="08:00"), world) == 0
+    assert upkeep.stable_script().read_bytes() == Path(upkeep.__file__).read_bytes()
+    assert str(upkeep.stable_script()) in " ".join(world.task)
 
 
 def test_toast_puts_ready_updates_first_and_stays_within_600(world):

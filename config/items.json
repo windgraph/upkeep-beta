@@ -20,7 +20,7 @@
      "path": "%USERPROFILE%/.vscode/extensions", "prefix": "anthropic.claude-code-", "lag_days": 7,
      "action": "in VS Code: Extensions view, Claude Code, Update, then Developer: Reload Window"},
     {"id": "python", "label": "Python", "type": "python_version", "yellow_below": "3.10",
-     "action": "update Python: https://www.python.org/downloads/windows/"},
+     "action": "update Python: py install --update (Python install manager), or https://www.python.org/downloads/windows/"},
     {"id": "pip_outdated", "label": "Outdated Python packages", "type": "pip_outdated", "timeout_s": 240},
     {"id": "node", "label": "Node.js", "type": "command_version", "cmd": ["node", "--version"], "regex": "v?(\\d+\\.\\d+\\.\\d+)",
      "on_change": "node changed: restart the tools that run on it"},

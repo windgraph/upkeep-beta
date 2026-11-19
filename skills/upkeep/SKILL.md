@@ -61,7 +61,8 @@ in plain words what it means and what, if anything, waits for them.
 | `apps --match` | Searches the winget catalogue by exact name for the apps winget did not match. Prints ids and commands; installs nothing |
 | `select --remove id,id` | Leave apps out. `--add id` puts one back, `--only id,id` covers a named few, `--all` returns to the default |
 | `select --quiet "<name>"` | Silence one app in the "no update seen" check |
-| `schedule --every daily --at 08:00` | Also `weekdays`, `weekly --day mon`, `manual`. `--off` removes the task. `--dry-run` prints the task line only |
+| `schedule --every daily --at 08:00` | Also `weekdays`, `weekly --day mon`, `manual`. `--off` removes the task. `--dry-run` prints the task line only. Choosing a schedule also writes the stable copy of the script that the task runs |
+| `setup` | Creates the home folder and writes the stable copy. Optional: `schedule` does both. `setup --every ...` takes the same schedule options |
 | `mode report` / `mode auto` | List only, or install by itself on the scheduled run |
 | `daily --dry-run` | What the scheduled run would report. Writes nothing |
 | `apply` | Installs the listed updates now. `--only id,id` installs just those |

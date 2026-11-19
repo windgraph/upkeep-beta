@@ -3,7 +3,7 @@
   "note": "How 'upkeep apps' names the apps winget cannot match. Patterns are lowercase fnmatch against the app name or the publisher. This is a starting table written from general knowledge, not verified app by app: correct it freely. An app found in no list is shown as 'no known updater'.",
   "driver_words": ["driver", "chipset", "bluetooth", "firmware", "management engine", "serial io", "sensor solution"],
   "manual": [
-    {"name": "python 3*", "by": "you: install the newer Python (https://www.python.org/downloads/windows/)"}
+    {"name": "python 3*", "by": "you: py install --update (Python install manager), or python.org; the Python check says whether a newer release is out"}
   ],
   "self_updating": [
     {"name": "microsoft 365*", "by": "Microsoft 365's own updater (File > Account > Update Options)"},
