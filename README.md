@@ -33,8 +33,8 @@ arrive. Three limits, stated up front:
   holds, and which it cannot reach.
 - **Checks** a few things that never install anything: Windows Update count,
   restart pending, free disk space, the Claude Code CLI and its plugins, the
-  VS Code Claude extension, Python, outdated Python packages (a count), Node,
-  Git, the NVIDIA driver.
+  VS Code Claude extension, Python (and whether a newer patch release is
+  out), outdated Python packages (a count), Node, Git, the NVIDIA driver.
 - **Sends one toast** per scheduled run and writes a report.
 
 ## What it never does
@@ -46,8 +46,10 @@ arrive. Three limits, stated up front:
   runs in.
 - It never updates Python packages. It reports how many are outdated.
 - It never installs over an app winget did not match.
-- It sends nothing anywhere. The only network traffic is what `winget`,
-  `claude` and `pip` do themselves.
+- It has no telemetry and sends no report anywhere. The only network traffic
+  is what these tools do themselves when asked what is new: `winget`,
+  `claude`, `pip`, the Python install manager (`py`, which asks python.org)
+  and Windows Update.
 
 ## Requirements
 
