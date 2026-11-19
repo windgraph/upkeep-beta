@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "description": "Keeps the apps on a Windows machine current, mostly as a security measure: lists what winget can update, installs on request or on a schedule you choose, and names the apps it cannot reach.",
   "author": {
-    "name": "windgraph"
+    "name": "windgraph",
+    "email": "windgraph.0@gmail.com"
   },
+  "repository": "https://github.com/windgraph/upkeep-beta",
   "license": "MIT",
   "keywords": ["windows", "winget", "updates", "security", "maintenance"]
 }

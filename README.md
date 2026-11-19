@@ -2,9 +2,10 @@
 
 A Claude Code plugin that keeps the apps on a Windows machine current.
 
-**This is a beta.** It has run daily on one machine. You are among the first to
-run it on another. Read "What is not tested yet" before you switch it to
-automatic.
+**This is a beta.** The tool it grew out of has run daily on one machine. This
+generic version has been tested on that one machine only, so you are among the
+first to run it on another. Read "What is not tested yet" before you switch it
+to automatic.
 
 ## Why
 
@@ -63,8 +64,15 @@ In Claude Code:
 /plugin install upkeep-beta@upkeep-beta
 ```
 
-The repository is private: your GitHub account must have been invited, and git
-on your machine must be signed in to it.
+`/plugin` is not available inside the VS Code extension's chat panel. There,
+or anywhere else it is refused, use a terminal (PowerShell) instead:
+
+```powershell
+claude plugin marketplace add windgraph/upkeep-beta
+claude plugin install upkeep-beta@upkeep-beta
+```
+
+Then start a new Claude Code session so the skill loads.
 
 ## First run
 
@@ -150,7 +158,7 @@ Your settings are never overwritten by a plugin update.
 
 ## Feedback
 
-Open an issue on this repository. Paste the output of
+Open an issue on this repository, or write to windgraph.0@gmail.com. Paste the output of
 `/upkeep-beta:upkeep diag`. It replaces your user name, profile path and
 machine name, but it does list app names and package ids from the last run:
 read it before you send it.

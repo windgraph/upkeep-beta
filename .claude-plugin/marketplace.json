@@ -1,7 +1,9 @@
 {
   "name": "upkeep-beta",
+  "description": "The upkeep-beta plugin: keeps the apps on a Windows machine current.",
   "owner": {
-    "name": "windgraph"
+    "name": "windgraph",
+    "email": "windgraph.0@gmail.com"
   },
   "plugins": [
     {
