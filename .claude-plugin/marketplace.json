@@ -1,0 +1,13 @@
+{
+  "name": "upkeep-beta",
+  "owner": {
+    "name": "windgraph"
+  },
+  "plugins": [
+    {
+      "name": "upkeep-beta",
+      "source": "./",
+      "description": "Keeps the apps on a Windows machine current, mostly as a security measure. Beta."
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "schema": "upkeep-items/1",
+  "note": "The checks every run makes. Paths may use {python} and %ENV% tokens. track:true turns a green item yellow when its value differs from the previous run; the item's own detail stays, with the change appended. Remove an item to stop checking it.",
+  "items": [
+    {"id": "winget_pass", "label": "App updates (winget)", "type": "winget_pass"},
+    {"id": "unmatched_stale", "label": "Apps outside winget", "type": "unmatched_stale", "stale_days": 180},
+    {"id": "windows_update", "label": "Windows Update", "type": "windows_update", "timeout_s": 180},
+    {"id": "pending_reboot", "label": "Restart pending", "type": "pending_reboot"},
+    {"id": "disk_free", "label": "Disk free space", "type": "disk_free", "drive": "%SystemDrive%",
+     "yellow_below_pct": 10, "red_below_pct": 5, "action": "free space on the system drive"},
+    {"id": "claude_code", "label": "Claude Code", "type": "claude_code", "stale_days": 14,
+     "action": "claude update"},
+    {"id": "claude_plugins", "label": "Claude plugins", "type": "claude_plugins",
+     "path": "%USERPROFILE%/.claude/plugins/installed_plugins.json", "json_newest_key": "lastUpdated",
+     "yellow_days": 30, "action": "update the plugins in Claude Code (/plugin)"},
+    {"id": "vscode_claude_extension", "label": "VS Code Claude extension", "type": "dir_latest",
+     "path": "%USERPROFILE%/.vscode/extensions", "prefix": "anthropic.claude-code-", "track": true,
+     "on_change": "restart VS Code windows to load the new extension"},
+    {"id": "claude_extension_lag", "label": "VS Code Claude extension vs CLI", "type": "claude_extension_lag",
+     "path": "%USERPROFILE%/.vscode/extensions", "prefix": "anthropic.claude-code-", "lag_days": 7,
+     "action": "in VS Code: Extensions view, Claude Code, Update, then Developer: Reload Window"},
+    {"id": "python", "label": "Python", "type": "python_version", "yellow_below": "3.10",
+     "action": "update Python: https://www.python.org/downloads/windows/"},
+    {"id": "pip_outdated", "label": "Outdated Python packages", "type": "pip_outdated", "timeout_s": 240},
+    {"id": "node", "label": "Node.js", "type": "command_version", "cmd": ["node", "--version"], "regex": "v?(\\d+\\.\\d+\\.\\d+)",
+     "on_change": "node changed: restart the tools that run on it"},
+    {"id": "git", "label": "Git", "type": "command_version", "cmd": ["git", "--version"], "regex": "git version (\\S+)",
+     "on_change": "git changed"},
+    {"id": "nvidia_driver", "label": "NVIDIA driver", "type": "command_version",
+     "cmd": ["nvidia-smi", "--query-gpu=driver_version", "--format=csv,noheader"], "regex": "(\\d+\\.\\d+)",
+     "on_change": "the graphics driver changed"}
+  ]
+}
